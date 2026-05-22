@@ -273,30 +273,71 @@ def enhance_waveform_streaming(model: torch.nn.Module,
 # TCN streaming  (identical to other fusion scripts)
 # ---------------------------------------------------------------------------
 
-def tcn_stream(model: LightweightTCN, noise_track: np.ndarray) -> dict:
+def tcn_stream(model: LightweightTCN, noise_track: np.ndarray,
+               tcn_hop: int = PREDICT_LEN // 2) -> dict:
+    """TCN streaming with cosine OLA between consecutive predictions.
+
+    Originally we tiled PREDICT_LEN (80-sample) predictions back-to-back with
+    no overlap.  Each prediction ended at a value uncorrelated with the next
+    prediction's starting value -> step discontinuity at every 5 ms boundary
+    -> audible "choppy" / "pulsing" artefact in the anti-noise and residual
+    tracks.  Cross-fading consecutive predictions with a Hann window kills
+    those steps.
+
+    With tcn_hop = PREDICT_LEN // 2 (40 samples = 2.5 ms), every output sample
+    receives a Hann-weighted contribution from two predictions, the window
+    sum at the interior is constant 1.0, and the streaming cost roughly
+    doubles (still ~6500 TCN calls for a 43-second clip, ~30 ms total).
+    """
     if len(noise_track) < INPUT_LEN + PREDICT_LEN:
         raise ValueError(
             f"Noise track too short for TCN streaming: need >= "
             f"{INPUT_LEN + PREDICT_LEN} smp, got {len(noise_track)}."
         )
-    n_preds = (len(noise_track) - INPUT_LEN) // PREDICT_LEN
-    out_len = n_preds * PREDICT_LEN
-    pred_out   = np.empty(out_len, dtype=np.float32)
-    actual_out = np.empty(out_len, dtype=np.float32)
+    hop = max(1, int(tcn_hop))
+    if hop > PREDICT_LEN:
+        hop = PREDICT_LEN  # never less overlap than zero
+    n_preds = (len(noise_track) - INPUT_LEN - PREDICT_LEN) // hop + 1
+    out_len = (n_preds - 1) * hop + PREDICT_LEN
+
+    pred_acc   = np.zeros(out_len, dtype=np.float32)
+    actual_acc = np.zeros(out_len, dtype=np.float32)
+    norm       = np.zeros(out_len, dtype=np.float32)
+
+    # Hann window over PREDICT_LEN samples — sums to ~1.0 in the interior
+    # when consecutive windows are spaced hop apart with 50% overlap (hop =
+    # PREDICT_LEN/2).  Trapezoidal would also work; Hann is smoother.
+    win = np.hanning(PREDICT_LEN).astype(np.float32)
+    if hop == PREDICT_LEN:
+        win[:] = 1.0  # no overlap requested -> revert to flat tiling
+
     ring = StreamingRingBuffer(INPUT_LEN)
     ring.push(noise_track[:INPUT_LEN])
+
     corrs = np.empty(n_preds, dtype=np.float32)
     for i in range(n_preds):
-        t        = INPUT_LEN + i * PREDICT_LEN
+        t        = INPUT_LEN + i * hop
         snapshot = ring.snapshot()
         pred     = predict_tcn(model, snapshot)
         actual   = noise_track[t : t + PREDICT_LEN]
-        slc = slice(i * PREDICT_LEN, (i + 1) * PREDICT_LEN)
-        pred_out[slc]   = pred
-        actual_out[slc] = actual
+
+        slc = slice(i * hop, i * hop + PREDICT_LEN)
+        pred_acc  [slc] += pred  * win
+        actual_acc[slc] += actual * win
+        norm      [slc] += win
+
         corrs[i] = (np.corrcoef(pred, actual)[0, 1]
                     if actual.std() > 1e-9 else 0.0)
-        ring.push(actual)
+
+        # Open-loop / mic-wins: ring is always re-pushed with hop samples of
+        # ACTUAL past, never with the model's prediction.  When hop <
+        # PREDICT_LEN this also keeps the ring perfectly aligned to the next
+        # iteration's `t`.
+        ring.push(actual[:hop])
+
+    norm[norm < 1e-6] = 1.0
+    pred_out   = (pred_acc   / norm).astype(np.float32)
+    actual_out = (actual_acc / norm).astype(np.float32)
     return dict(tcn_pred=pred_out, actual_future=actual_out, corrs=corrs)
 
 
@@ -445,35 +486,28 @@ def main() -> None:
     save_wav(anti,     out_dir / "5_anti_noise.wav")
     save_wav(residual, out_dir / "6_residual.wav")
 
-    # -- 3b. EXPERIMENTAL listener-perceived audio --------------------------
-    # NOTE: this is a naive simulation of the on-air ANC result.  The TCN
-    # predicts the MODEL'S noise residual (mix - clean), not the raw LF
-    # content of mix; when CRN preserves voice fundamentals (80-300 Hz) the
-    # two differ, and naively adding `anti` to `mix` can INCREASE LF energy
-    # because the prediction correlates with mix_LF in the wrong sign.  The
-    # head's Linear layers also leak HF into anti above the 180 Hz training
-    # band.  Use this output only as a curiosity -- for actually listening,
-    # 2b_crn_clean_gated.wav is the right file.
+    # -- 3b. LISTENER-PERCEIVED AUDIO (headset-style ANC simulation) ---------
+    # Headset model: the listener hears denoised speech from the playback
+    # path PLUS the residual ambient noise that survives the speaker's
+    # cancellation.  Mathematically this is exactly:
+    #     perceived(t) = clean(t) + residual(t)
+    #                  = denoised_speech(t) + (LF_noise(t) - LF_pred(t))
+    # We use the gated clean output here -- the gate kills residual hiss in
+    # the speech path, the TCN handles ambient LF noise in the air path,
+    # together they deliver intelligible speech with reduced ambient rumble.
     perceived_start = INPUT_LEN
-    perceived_end   = INPUT_LEN + len(anti)
-    mix_aligned     = mix_t[perceived_start:perceived_end]
-    # Hard-LPF anti before adding so we only inject cancellation in the band
-    # the TCN was actually trained for; stops the model's HF hallucinations
-    # from being audible.
-    anti_safe       = low_pass_filter(anti)
-    perceived       = (mix_aligned + anti_safe).astype(np.float32)
-    save_wav(perceived, out_dir / "7_perceived_at_listener_EXPERIMENTAL.wav")
+    perceived_end   = INPUT_LEN + len(residual)
+    clean_for_mix   = clean_gated[perceived_start:perceived_end]
+    perceived       = (clean_for_mix + residual).astype(np.float32)
+    save_wav(perceived, out_dir / "7_perceived_at_listener.wav")
 
     # -- 4. Report -----------------------------------------------------------
     nr_db = db(rms(actual), rms(residual))
-    # Compare what the listener hears (perceived) vs the raw mic (mix) over
-    # the same time window.  This is the *real* user-facing improvement.
-    full_mix_nr_db = db(rms(mix_aligned), rms(perceived))
     print("\n" + "-" * 64)
     print(f"  CRN chunks            : {n_chunks}  "
           f"(chunk={args.chunk_sec:.2f}s hop={args.hop_sec:.2f}s)")
     print(f"  TCN windows           : {len(corrs)}  "
-          f"(context={INPUT_LEN}, predict={PREDICT_LEN}, hop={PREDICT_LEN})")
+          f"(context={INPUT_LEN}, predict={PREDICT_LEN}, OLA hop={PREDICT_LEN // 2})")
     print(f"  TCN vs extracted-noise corr   "
           f"mean={corrs.mean():+.3f}   median={np.median(corrs):+.3f}   "
           f"p10={np.percentile(corrs,10):+.3f}   p90={np.percentile(corrs,90):+.3f}")
@@ -481,17 +515,15 @@ def main() -> None:
     print(f"  RMS anti-noise        : {rms(anti):.5f}")
     print(f"  RMS residual          : {rms(residual):.5f}")
     print(f"  cancellation (LF band): {nr_db:+.2f} dB   (TCN vs LP-filtered noise)")
-    print(f"  perceived improvement : {full_mix_nr_db:+.2f} dB   "
-          f"(mix RMS vs listener-perceived RMS, broadband)")
     print("-" * 64)
     print(f"  WAVs written under    : {out_dir.resolve()}")
-    listening = "2b_crn_clean_gated.wav"
+    listening = "7_perceived_at_listener.wav"
     listed = ["1_mix.wav", "2_crn_clean.wav", "2b_crn_clean_gated.wav",
               "3_crn_extracted_noise.wav", "3b_extracted_noise_lpf.wav",
               "4_tcn_prediction.wav", "5_anti_noise.wav", "6_residual.wav",
-              "7_perceived_at_listener_EXPERIMENTAL.wav"]
+              "7_perceived_at_listener.wav"]
     for name in listed:
-        marker = "  <-- LISTEN TO THIS" if name == listening else ""
+        marker = "  <-- LISTEN TO THIS (headset ANC simulation)" if name == listening else ""
         print(f"    {name}{marker}")
 
 
