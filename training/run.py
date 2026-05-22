@@ -2,28 +2,28 @@
 run.py
 ======
 Single entry-point to drive preprocessing, training, and evaluation for
-either denoiser project (CRN or speech_denoise/AdvancedUNetSE).
+either denoiser project (CRN or U_net/AdvancedUNetSE).
 
 Examples
 --------
-    # Preprocess raw audio → .npy
+    # Preprocess raw audio -> .npy
     python run.py preprocess --in_root ./raw_audio --out_root ./data_npy
 
-    # Smoke-test (1 epoch, tiny budget) — verify the pipeline runs end-to-end
+    # Smoke-test (1 epoch, tiny budget) - verify the pipeline runs end-to-end
     python run.py smoke --project crn
-    python run.py smoke --project speech_denoise
+    python run.py smoke --project unet
 
     # Full training (sane defaults for limited-resource GPUs)
-    python run.py train --project crn          --data_root ./CRN/data_npy
-    python run.py train --project speech_denoise --data_root ./speech_denoise/data_npy
+    python run.py train --project crn  --data_root ./CRN/data_npy
+    python run.py train --project unet --data_root ./U_net/data_npy
 
     # Finetune from existing checkpoint
-    python run.py train --project speech_denoise --finetune \\
-        --resume ./speech_denoise/checkpoints/best.pt
+    python run.py train --project unet --finetune \\
+        --resume ./U_net/checkpoints/best.pt
 
     # Evaluate
-    python run.py evaluate --project crn --ckpt ./CRN/checkpoints/best.pt
-    python run.py evaluate --project speech_denoise --ckpt ./speech_denoise/checkpoints/best.pt
+    python run.py evaluate --project crn  --ckpt ./CRN/checkpoints/best.pt
+    python run.py evaluate --project unet --ckpt ./U_net/checkpoints/best.pt
 """
 from __future__ import annotations
 
@@ -33,10 +33,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent
+# This orchestrator lives in <repo>/training/, while the model folders live in
+# <repo>/models/ and the preprocess script lives in <repo>/data_prep/.  REPO
+# below points at the repo root so the relative paths below resolve correctly
+# regardless of where the user invokes the script from.
+REPO = Path(__file__).resolve().parent.parent
 PROJECT_DIRS = {
-    "crn":            REPO / "CRN",
-    "speech_denoise": REPO / "speech_denoise",
+    "crn":  REPO / "models" / "CRN",
+    "unet": REPO / "models" / "U_net",
 }
 
 
@@ -46,12 +50,7 @@ def _run(cmd: list, cwd: Path) -> int:
 
 
 def cmd_preprocess(args, extra: list) -> int:
-    # Canonical preprocessor: data_prep/preprocess4.py — strict CSV→label
-    # row-aligned, fixed-length pad/trim, peak-normalized. See PREDICTOR.md /
-    # the deep-audit notes for why the older preprocess.py / preprocess_v3.py
-    # variants were removed.
-    preproc = REPO.parent / "data_prep" / "preprocess4.py"
-    cmd = [sys.executable, str(preproc)] + extra
+    cmd = [sys.executable, str(REPO / "data_prep" / "preprocess.py")] + extra
     return _run(cmd, REPO)
 
 
@@ -112,7 +111,7 @@ def main():
     ap = argparse.ArgumentParser(description="Speech-denoiser pipeline runner.")
     sub = ap.add_subparsers(dest="stage", required=True)
 
-    p_pre = sub.add_parser("preprocess", help="Run preprocess.py (raw audio → .npy)")
+    p_pre = sub.add_parser("preprocess", help="Run preprocess.py (raw audio -> .npy)")
     p_pre.set_defaults(fn=cmd_preprocess)
 
     p_smoke = sub.add_parser("smoke", help="1-epoch smoke test (5 steps, 2 val batches)")
