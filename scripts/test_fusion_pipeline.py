@@ -315,7 +315,7 @@ def main() -> None:
 
     # ── 4. Report ─────────────────────────────────────────────────────────────
     nr_db = db(rms(actual), rms(residual))
-    print("\n" + "─" * 64)
+    print("\n" + "-" * 64)
     print(f"  windows               : {len(corrs)}  "
           f"(context={INPUT_LEN}, predict={PREDICT_LEN}, hop={PREDICT_LEN})")
     print(f"  TCN vs extracted-noise corr   "
@@ -325,7 +325,7 @@ def main() -> None:
     print(f"  RMS anti-noise        : {rms(anti):.5f}")
     print(f"  RMS residual          : {rms(residual):.5f}")
     print(f"  cancellation          : {nr_db:+.2f} dB   (higher = more noise removed)")
-    print("─" * 64)
+    print("-" * 64)
     print(f"  WAVs written under    : {out_dir.resolve()}")
     for name in ("1_mix.wav", "2_crn_clean.wav", "3_crn_extracted_noise.wav",
                  "4_tcn_prediction.wav", "5_anti_noise.wav", "6_residual.wav"):

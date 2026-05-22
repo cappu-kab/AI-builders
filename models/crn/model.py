@@ -81,7 +81,7 @@ class STFT(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """waveform (B, T) -> complex spec (B, F, T'). Forces fp32 under AMP."""
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast('cuda', enabled=False):
             x32 = x.float()
             spec = torch.stft(x32, n_fft=self.n_fft, hop_length=self.hop_length,
                               win_length=self.win_length, window=self.window,
@@ -98,7 +98,7 @@ class ISTFT(nn.Module):
         self.register_buffer("window", torch.hann_window(self.win_length), persistent=False)
 
     def forward(self, spec: torch.Tensor, length: int | None = None) -> torch.Tensor:
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast('cuda', enabled=False):
             spec32 = spec.to(torch.complex64)
             return torch.istft(spec32, n_fft=self.n_fft, hop_length=self.hop_length,
                                win_length=self.win_length, window=self.window,
