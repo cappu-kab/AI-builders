@@ -39,8 +39,8 @@ from pathlib import Path
 # regardless of where the user invokes the script from.
 REPO = Path(__file__).resolve().parent.parent
 PROJECT_DIRS = {
-    "crn":  REPO / "models" / "CRN",
-    "unet": REPO / "models" / "U_net",
+    "crn":  REPO / "models" / "crn",
+    "unet": REPO / "models" / "unet",
 }
 
 
