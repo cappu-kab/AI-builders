@@ -82,6 +82,7 @@ from predictor import (                                        # noqa: E402
     LightweightTCN,
     StreamingRingBuffer,
     predict_tcn,
+    low_pass_filter,                # 180 Hz Cheby II causal LPF used at training time
     INPUT_LEN,
     PREDICT_LEN,
     SAMPLE_RATE,
@@ -274,6 +275,18 @@ def main() -> None:
           f"clean RMS = {rms(clean):.5f}   "
           f"extracted-noise RMS = {rms(extracted_noise):.5f}")
 
+    # ── 2b. Match the TCN's training-time input distribution ──────────────────
+    # The TCN was trained on signals that had passed through a strictly-causal
+    # Cheby II 180 Hz low-pass (see predictor.low_pass_filter).  The CRN
+    # residual fed straight in is wideband and carries STFT/iSTFT boundary
+    # artefacts plus residual speech leakage — both well outside the model's
+    # training distribution.  Applying the same LPF here puts the input back
+    # into the band the TCN was trained to forecast.
+    tcn_input = low_pass_filter(extracted_noise)
+    save_wav(tcn_input, out_dir / "3b_crn_extracted_noise_lpf.wav")
+    print(f"      LPF (Cheby II 180 Hz, causal sosfilt)  "
+          f"filtered-noise RMS = {rms(tcn_input):.5f}")
+
     # ── 3. Stream the residual through the TCN ────────────────────────────────
     print(f"\n[TCN] loading {args.tcn_ckpt}")
     tcn = LightweightTCN().to(device)
@@ -282,10 +295,13 @@ def main() -> None:
         state = state["model"]
     tcn.load_state_dict(state)
     tcn.eval()
+    print(f"      TCN z-score buffers: "
+          f"x_mean={float(tcn.x_mean):+.5f}  x_std={float(tcn.x_std):.5f}  "
+          f"y_mean={float(tcn.y_mean):+.5f}  y_std={float(tcn.y_std):.5f}")
 
-    print(f"      streaming TCN over {len(extracted_noise)} smp "
+    print(f"      streaming TCN over {len(tcn_input)} smp "
           f"(context={INPUT_LEN}, hop={PREDICT_LEN}) ...")
-    stream = tcn_stream(tcn, extracted_noise)
+    stream = tcn_stream(tcn, tcn_input)
     tcn_pred = stream["tcn_pred"]
     actual   = stream["actual_future"]
     corrs    = stream["corrs"]
