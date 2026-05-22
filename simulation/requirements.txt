@@ -1,0 +1,43 @@
+# ANC Phase 1 — Python dependencies
+# Install on Jetson Nano:
+#   pip3 install -r requirements.txt
+
+# ── Core audio I/O ────────────────────────────────────────────
+sounddevice>=0.4.6       # PortAudio wrapper for real-time streaming
+soundfile>=0.12.1        # WAV/FLAC/OGG reader+writer (file_simulator.py)
+numpy>=1.21.0
+scipy>=1.7.0             # Butterworth filter, resampler (mock model + audio_utils)
+
+# ── AI Inference (choose the appropriate variant) ─────────────
+
+# Option A: ONNX Runtime — CPU build (works out-of-the-box on Jetson)
+onnxruntime>=1.15.0
+
+# Option B: ONNX Runtime — GPU/TensorRT (faster on Jetson; install from NVIDIA wheel)
+# DO NOT install both onnxruntime and onnxruntime-gpu simultaneously.
+# Download the Jetson-specific wheel from:
+#   https://elinux.org/Jetson_Zoo#ONNX_Runtime
+# Then install with:
+#   pip3 install onnxruntime_gpu-*.whl
+# onnxruntime-gpu
+
+# Option C: PyTorch (only needed if using a TorchScript .pt checkpoint)
+# torch>=2.0.0           # Uncomment if your model is a TorchScript file
+
+# ── Visualization dashboard ───────────────────────────────────
+pyqtgraph>=0.13.3        # Hardware-accelerated real-time plotting (PyQt5 or PyQt6)
+
+# Qt binding — platform-specific:
+#   Windows (win_amd64):  PyQt5 has NO pip wheels → use PyQt6
+PyQt6>=6.4.0
+#   Linux / Jetson Nano:  comment out PyQt6 above and use PyQt5 via apt:
+#     sudo apt-get install -y python3-pyqt5
+#   OR pip on Linux arm64 if apt is unavailable:
+#     pip3 install PyQt5
+
+# PyOpenGL>=3.1.6        # Optional: OpenGL GPU acceleration for pyqtgraph
+#                          pip install PyOpenGL PyOpenGL_accelerate
+
+# ── System-level dependency (install via apt, not pip) ────────
+# PortAudio:   sudo apt-get install -y portaudio19-dev
+# ALSA utils:  sudo apt-get install -y alsa-utils

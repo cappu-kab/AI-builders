@@ -1,0 +1,29 @@
+# Speech Denoising CRN — Python dependencies
+#
+# Install PyTorch FIRST (CUDA 12.8 wheels for RTX 50-series / Blackwell):
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+#
+# Then install everything else:
+#   pip install -r requirements.txt
+
+# ── Core runtime ──────────────────────────────────────────────────────────────
+numpy>=1.24
+soundfile>=0.12          # WAV I/O in inference.py / evaluate.py
+
+# ── Training monitoring ───────────────────────────────────────────────────────
+tensorboard>=2.15
+
+# ── Evaluation: MOS scoring (optional, best-available fallback chain) ─────────
+# speechmos           # pip install speechmos  — neural DNSMOS (no reference)
+# pesq                # pip install pesq       — PESQ-WB (reference required)
+scipy>=1.11           # scipy.signal.wiener Wiener baseline in evaluate.py
+
+# ── Evaluation: WER ───────────────────────────────────────────────────────────
+jiwer>=3.0            # Word Error Rate / Character Error Rate computation
+pythainlp>=3.1        # Thai word tokenisation for correct WER segmentation
+
+# ── Evaluation: ASR (Whisper via HuggingFace transformers) ───────────────────
+# Uses openai/whisper-base (multilingual) by default — supports Thai and other
+# non-English languages out of the box.  No separate openai-whisper package needed.
+transformers>=4.36    # HuggingFace pipeline: Whisper tokeniser + model weights
+accelerate>=0.26      # efficient GPU model loading for transformers

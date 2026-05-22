@@ -1,0 +1,17 @@
+# Install PyTorch SEPARATELY first (CUDA 12.8 wheels for RTX 50-series Blackwell):
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+#
+# Then install the rest with:
+#   pip install -r requirements.txt
+
+# Core
+numpy>=1.24
+soundfile>=0.12
+tensorboard>=2.15
+
+# Evaluation — WER
+jiwer>=3.0                  # WER / CER computation
+
+# Evaluation — ASR (Whisper via HuggingFace)
+transformers>=4.36           # HuggingFace pipeline; includes Whisper tokeniser + model
+accelerate>=0.26             # efficient model loading on GPU for transformers

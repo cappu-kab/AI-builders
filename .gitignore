@@ -1,0 +1,74 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.Python
+build/
+dist/
+.eggs/
+
+# ---- Virtual envs ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- IDE / editors ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ---- Notebooks ----
+.ipynb_checkpoints/
+
+# ---- Logs / runs / outputs ----
+logs/
+runs/
+outputs/
+denoised_outputs/
+benchmark_outputs/
+eval_results/
+results/
+test_results/
+
+# ---- Datasets (kept locally, not in git) ----
+data_npy/
+common_voice_local/
+fleurs_local/
+thai_elderly_local/
+thai_isan_dialect_local/
+curated_dataset/
+final_dataset/
+UrbanSound8K/
+noisy_testset_wav/
+clean_test/
+noise_test/
+*.zip
+*.tar
+*.tar.gz
+
+# ---- Model checkpoints (large binaries; track via Releases / LFS) ----
+checkpoints/
+checkpoints_*/
+*.pt
+*.pth
+*.onnx
+*.ckpt
+# Whitelist the small TCN predictor checkpoint (~200KB) which is part of the simulation demo
+!simulation/tcn_predictor.pt
+!simulation/tcn_AC_predictor.pt
+
+# ---- Audio test artefacts ----
+*.wav
+*.mp3
+*.mp4
+*.flac
+*.ogg
+
+# ---- Misc ----
+*.log
+.cache/
