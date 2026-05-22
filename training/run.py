@@ -46,7 +46,12 @@ def _run(cmd: list, cwd: Path) -> int:
 
 
 def cmd_preprocess(args, extra: list) -> int:
-    cmd = [sys.executable, str(REPO / "preprocess.py")] + extra
+    # Canonical preprocessor: data_prep/preprocess4.py — strict CSV→label
+    # row-aligned, fixed-length pad/trim, peak-normalized. See PREDICTOR.md /
+    # the deep-audit notes for why the older preprocess.py / preprocess_v3.py
+    # variants were removed.
+    preproc = REPO.parent / "data_prep" / "preprocess4.py"
+    cmd = [sys.executable, str(preproc)] + extra
     return _run(cmd, REPO)
 
 
