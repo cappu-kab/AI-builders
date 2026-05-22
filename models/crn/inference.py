@@ -30,12 +30,21 @@ def _model_kwargs_from_args(saved_args: Dict[str, Any]) -> Dict[str, Any]:
 
 def load_model(ckpt_path: str | Path, device: torch.device,
                set_eval: bool = True) -> Tuple[torch.nn.Module, Dict[str, Any]]:
-    """Load a CRN checkpoint. Reconstructs the model from saved args when possible."""
+    """Load a CRN checkpoint. Reconstructs the model from saved args when possible.
+
+    Backwards-compat: the FreqAttention bottleneck block was added AFTER some
+    checkpoints were trained.  We auto-detect its presence in the state_dict
+    and construct CRN(use_freq_attn=...) accordingly so old and new
+    checkpoints both load with zero missing/unexpected keys.
+    """
     ckpt = torch.load(str(ckpt_path), map_location=device)
     saved_args = ckpt.get("args", {}) or {}
-    kwargs = _model_kwargs_from_args(saved_args)
-    model = CRN(**kwargs).to(device)
     state = ckpt["model"] if "model" in ckpt else ckpt
+    kwargs = _model_kwargs_from_args(saved_args)
+    # Old checkpoints (pre-FreqAttention) have no `freq_attn.*` keys — turn
+    # the block OFF so the architecture exactly matches what was trained.
+    kwargs["use_freq_attn"] = any(k.startswith("freq_attn.") for k in state.keys())
+    model = CRN(**kwargs).to(device)
     missing, unexpected = model.load_state_dict(state, strict=False)
     if missing:
         print(f"[inference] {len(missing)} missing keys (init from scratch).")

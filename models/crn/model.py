@@ -283,6 +283,7 @@ class CRN(nn.Module):
                  mask_bound: float = 1.2,
                  dropout_p: float = 0.1,
                  use_se: bool = True,
+                 use_freq_attn: bool = True,
                  sample_rate: int = 16_000,
                  # legacy kwarg names — still accepted
                  lstm_hidden: int | None = None,
@@ -317,7 +318,13 @@ class CRN(nn.Module):
         self.bottleneck_C = ch[-1]
         feat = self.bottleneck_C * self.bottleneck_F
         self.bottleneck_se  = SEBlock(ch[-1])       # global channel attention before BiLSTM
-        self.freq_attn      = FreqAttention(self.bottleneck_C, n_heads=4)  # cross-freq attention
+        # FreqAttention is opt-in: checkpoints trained BEFORE this block was
+        # added do not contain freq_attn.* keys; load_model() auto-detects
+        # their absence and constructs CRN(use_freq_attn=False) so there are
+        # no missing keys and the architecture exactly matches the checkpoint.
+        self.use_freq_attn = bool(use_freq_attn)
+        if self.use_freq_attn:
+            self.freq_attn = FreqAttention(self.bottleneck_C, n_heads=4)
 
         # ---- project (B,T,feat) -> (B,T,bottleneck_dim) before recurrent layer ----
         # CRITICAL: do NOT skip this projection. The raw feature dim (2304) makes
@@ -394,7 +401,8 @@ class CRN(nn.Module):
 
         # bottleneck along time:  feat -> proj_in -> RNN -> proj_out -> feat
         h = self.bottleneck_se(h)             # channel attention: LF vs HF separation
-        h = self.freq_attn(h)                 # cross-frequency harmonic attention
+        if self.use_freq_attn:
+            h = self.freq_attn(h)             # cross-frequency harmonic attention
         B, C, Fb, T = h.shape
         seq = h.permute(0, 3, 1, 2).reshape(B, T, C * Fb)
         seq = self.proj_in(seq)
