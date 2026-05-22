@@ -50,8 +50,20 @@ try:
 except Exception:
     pass
 
-ROOT     = Path(__file__).parent
-UNET_DIR = ROOT / "U_net"
+# ── Dual-layout path resolution ─────────────────────────────────────────────
+# Two valid layouts are supported:
+#   (A) Author's local machine — this file sits in  C:\...\AI_builders\Run\
+#       alongside  Run/CRN/  and  Run/U_net/  as siblings.  ROOT / "U_net"
+#       resolves to the real folder; this path wins by Path.is_dir() check.
+#   (B) Public Git repo (AI_Builders_ANC_Pipeline) — this file sits in
+#       <repo>/training/  while the U-Net code lives at <repo>/models/unet/.
+#       The local sibling does NOT exist, so we fall back to the repo layout.
+# Comparison is by Path.is_dir() rather than os.environ / hostname so the
+# logic stays correct if either tree is copied/renamed.
+ROOT        = Path(__file__).parent
+_LOCAL_UNET = ROOT / "U_net"                        # layout (A)
+_REPO_UNET  = ROOT.parent / "models" / "unet"       # layout (B)
+UNET_DIR    = _LOCAL_UNET if _LOCAL_UNET.is_dir() else _REPO_UNET
 
 if str(UNET_DIR) not in sys.path:
     sys.path.insert(0, str(UNET_DIR))

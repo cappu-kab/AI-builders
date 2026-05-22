@@ -48,9 +48,21 @@ import numpy as np
 import torch
 import torchaudio
 
-ROOT     = Path(__file__).parent
-CRN_DIR  = ROOT / "CRN"
-UNET_DIR = ROOT / "U_net"
+# ── Dual-layout path resolution ─────────────────────────────────────────────
+# (A) Author's local machine: this file sits in  C:\...\AI_builders\Run\
+#     alongside  Run/CRN/  and  Run/U_net/  as siblings.
+# (B) Public Git repo (AI_Builders_ANC_Pipeline): this file sits in
+#     <repo>/evaluation/  while the model code lives at
+#     <repo>/models/crn/  and  <repo>/models/unet/.
+# Path.is_dir() decides per directory, so a mixed layout (CRN local + U-Net
+# repo, or vice versa) still resolves correctly.
+ROOT        = Path(__file__).parent
+_LOCAL_CRN  = ROOT / "CRN"
+_REPO_CRN   = ROOT.parent / "models" / "crn"
+_LOCAL_UNET = ROOT / "U_net"
+_REPO_UNET  = ROOT.parent / "models" / "unet"
+CRN_DIR  = _LOCAL_CRN  if _LOCAL_CRN.is_dir()  else _REPO_CRN
+UNET_DIR = _LOCAL_UNET if _LOCAL_UNET.is_dir() else _REPO_UNET
 
 # ---------------------------------------------------------------------------
 # Dynamic module loader — avoids sys.path pollution between CRN / U-Net

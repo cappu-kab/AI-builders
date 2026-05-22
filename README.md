@@ -9,7 +9,7 @@ End-to-end Data, Training, and Simulation pipeline for **Predictive Active Noise
                                                                             │
  finetune/ (Mossformer, Resemble) ◄──────────────────────────────────────────┤
                                                                             ▼
-                                          evaluation/ (benchmark, eval, table)
+                                          evaluation/ (benchmark, eval)
                                                                             │
                                                     simulation/ (TCN predictor
                                                     + CRN/UNet runtime + file
@@ -24,7 +24,7 @@ End-to-end Data, Training, and Simulation pipeline for **Predictive Active Noise
 | `models/crn/`  | CRN architecture, dataset, losses, **train**, evaluate, inference (self-contained).          |
 | `models/unet/` | Advanced U-Net SE architecture, train, evaluate, benchmark, Colab notebook.                  |
 | `training/`    | `run.py` master orchestrator + Mossformer / Resemble Enhance fine-tuning scripts.            |
-| `evaluation/`  | `benchmark.py`, `eval.py`, `table.py` — metrics + result tables.                             |
+| `evaluation/`  | `benchmark.py`, `eval.py` — metrics + result tables.                                          |
 | `simulation/`  | Hardware-accurate streaming simulator, Causal TCN predictor, model runtime, visualizer.      |
 | `scripts/`     | `export_onnx.py`, `test_fusion_pipeline.py`, `inference.py` — utilities.                     |
 | `docs/`        | `PREDICTOR.md`, project summaries, simulation history & README.                              |

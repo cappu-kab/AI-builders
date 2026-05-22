@@ -47,8 +47,16 @@ import matplotlib.pyplot as plt
 import torchaudio.transforms as T
 
 
-ROOT     = Path(__file__).parent
-UNET_DIR = ROOT / "U_net"
+# ── Dual-layout path resolution ─────────────────────────────────────────────
+# (A) Author's local machine: this file sits in  C:\...\AI_builders\Run\
+#     beside  Run/U_net/  as siblings → ROOT / "U_net" exists.
+# (B) Public Git repo (AI_Builders_ANC_Pipeline): this file sits in
+#     <repo>/training/  and the U-Net code lives at <repo>/models/unet/.
+# Path.is_dir() picks whichever tree the user actually has on disk.
+ROOT        = Path(__file__).parent
+_LOCAL_UNET = ROOT / "U_net"                        # layout (A)
+_REPO_UNET  = ROOT.parent / "models" / "unet"       # layout (B)
+UNET_DIR    = _LOCAL_UNET if _LOCAL_UNET.is_dir() else _REPO_UNET
 
 if str(UNET_DIR) not in sys.path:
     sys.path.insert(0, str(UNET_DIR))

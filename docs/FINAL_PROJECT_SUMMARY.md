@@ -11,7 +11,7 @@ The project contains **two complete model implementations** trained on the same 
 | System | Location | Architecture | Parameters |
 |---|---|---|---|
 | **CRN** (primary) | root folder | Convolutional Recurrent Network + BiLSTM | ~4–6 M |
-| **U-Net** (baseline) | `speech_denoise/` | Advanced U-Net + dilated bottleneck | ~2.1 M |
+| **U-Net** (baseline) | `models/unet/` | Advanced U-Net + dilated bottleneck | ~2.1 M |
 
 Both models share the same **residual noise prediction** paradigm: rather than attempting to directly predict what clean speech looks like, the model learns to predict the *noise component* of the mixture. The clean output is recovered by subtraction:
 
@@ -92,7 +92,7 @@ The original CRN bottleneck used a single unidirectional GRU. The final architec
 
 ---
 
-## 3. Baseline Model: Ultra-Lightweight U-Net (`speech_denoise/`)
+## 3. Baseline Model: Ultra-Lightweight U-Net (`models/unet/`)
 
 ### Motivation
 
