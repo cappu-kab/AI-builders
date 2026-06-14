@@ -1,0 +1,55 @@
+[project]
+name = "ai-builders"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "accelerate>=1.13.0",
+    "beautifulsoup4>=4.14.3",
+    "dataset>=2.0.0",
+    "datasets==3.6.0",
+    "huggingface-hub>=1.12.0",
+    "jiwer>=4.0.0",
+    "librosa>=0.11.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.4",
+    "omegaconf>=2.3.0",
+    "opencv-python>=4.13.0.92",
+    "pyarrow>=24.0.0",
+    "pydub>=0.25.1",
+    "pyqtgraph>=0.14.0",
+    "pythainlp>=3.1",
+    "resampy>=0.4.3",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "seacrowd>=0.2.2",
+    "sounddevice>=0.5.5",
+    "soundfile>=0.13.1",
+    "speechbrain>=1.1.0",
+    "speechmos>=0.0.1.1",
+    "tabulate>=0.10.0",
+    "tensorflow>=2.21.0",
+    "tensorflow-hub>=0.16.1",
+    "torch>=2.11.0",
+    "torchaudio>=2.11.0",
+    "torchcodec>=0.12.0",
+    "torchvision>=0.21.0",
+    "tqdm>=4.67.3",
+    "transformers>=5.7.0",
+    "yt-dlp>=2026.3.17",
+]
+
+[tool.uv]
+package = false
+reinstall-package = ["torch", "torchvision", "torchaudio"]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }
