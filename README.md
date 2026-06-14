@@ -52,8 +52,7 @@ Measured on 16,438 test clips (SNR baseline = +5 dB):
 
 ### Download
 
-[**→ Download from GitHub Releases**](https://github.com/cappu-kab/AI-builders/releases)
-*(link active once the release is published)*
+[**→ Download best.pt (v1.0)**](https://github.com/cappu-kab/AI-builders/releases/download/v1.0/best.pt)
 
 ### Place the file
 
