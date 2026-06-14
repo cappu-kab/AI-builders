@@ -136,6 +136,16 @@ AI-builders/
 │   └── test_fusion_pipeline*.py    <- CRN + TCN streaming fusion tests
 ├── build_trt_engines.sh            <- TensorRT FP16 engine build (run on Jetson)
 │
+│  ── Utility & Analysis Tools ──
+├── tools/
+│   ├── _smoke_test.py              <- Pipeline smoke test
+│   ├── baselines.py                <- Baseline comparisons
+│   ├── band_eval.py                <- Per-frequency-band evaluation
+│   ├── benchmark_crn_onnx.py       <- CRN ONNX runtime benchmark
+│   ├── make_examples.py            <- Generate Gradio example audio clips
+│   ├── export_crn_onnx.py          <- Standalone CRN ONNX export (200 ms context)
+│   └── tune_compare.py             <- AGC tuning utility
+│
 │  ── HuggingFace Deployment ──
 ├── hf_deploy/                      <- Snapshot deployed to HF Spaces
 │
@@ -217,7 +227,7 @@ source .venv/bin/activate        # macOS / Linux
 .venv\Scripts\activate           # Windows (Command Prompt)
 .venv\Scripts\Activate.ps1       # Windows (PowerShell)
 
-pip install torch gradio scipy librosa soundfile huggingface_hub matplotlib pillow
+pip install torch torchaudio gradio scipy librosa soundfile huggingface_hub matplotlib pillow
 
 # Download checkpoint first (see "Pre-trained Model Checkpoints" above)
 # Place it at: checkpoints/best.pt
