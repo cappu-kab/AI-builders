@@ -294,19 +294,23 @@ python simulation/file_simulator.py dirty.wav -m crn -o cancelled.wav
 
 ### Jetson Hardware Pipeline
 
+> **Note:** The hardware pipeline script (`hardware/main_jetson_pipeline.py`) is currently a structural stub for integration testing. Actual microphone and UART integration are pending. All hardware I/O functions (Spresense serial, USB sound card, CRN inference) return dummy zeros until physical wiring is complete.
+
 ```bash
 # Run on the Jetson Orin Nano:
 
 # Step 1 — build TRT FP16 engine
 bash build_trt_engines.sh
 
-# Step 2 — start the ANC pipeline
+# Step 2 — run pipeline skeleton (hardware I/O stubs — not yet wired)
 python hardware/main_jetson_pipeline.py
 ```
 
 ---
 
 ## Hardware Prototype
+
+> **Note:** The hardware pipeline script (`hardware/main_jetson_pipeline.py`) is currently a structural stub for integration testing. Actual microphone and UART integration are pending.
 
 **Stack:** Sony Spresense / ESP32-S3 (mic capture) → UART → Jetson Orin Nano (CRN inference) → speaker
 

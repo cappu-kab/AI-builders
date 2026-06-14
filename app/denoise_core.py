@@ -14,7 +14,7 @@ import numpy as np
 # ── Paths ──────────────────────────────────────────────────────────────────────
 _ROOT    = Path(__file__).parent.parent.resolve()   # AI_builders/
 _CRN_DIR = _ROOT / "Run" / "CRN"
-_CKPT    = _CRN_DIR / "checkpoints" / "best.pt"
+_CKPT    = _ROOT / "checkpoints" / "best.pt"
 _OUT_DIR = _ROOT / "outputs_tmp"
 _OUT_DIR.mkdir(exist_ok=True)
 
