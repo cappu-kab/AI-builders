@@ -1,8 +1,10 @@
-"""
+﻿"""
 tune_compare.py — AGC current vs stronger on noisy input.
 Usage: python tune_compare.py <input.wav>
 """
 import sys
+from pathlib import Path as _P
+sys.path.insert(0, str(_P(__file__).parent.parent))
 from pathlib import Path
 
 if len(sys.argv) != 2:
@@ -14,7 +16,7 @@ if not Path(in_path).exists():
     print(f"File not found: {in_path}")
     sys.exit(1)
 
-import denoise_core
+from app import denoise_core
 
 stem    = Path(in_path).stem
 out_dir = denoise_core._OUT_DIR

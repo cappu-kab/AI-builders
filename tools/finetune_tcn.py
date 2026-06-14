@@ -1,4 +1,4 @@
-"""
+﻿"""
 finetune_tcn.py
 ===============
 Fine-tune the existing LightweightTCN checkpoint on the LF noise profile
@@ -32,6 +32,9 @@ Run
 """
 
 from __future__ import annotations
+import sys
+from pathlib import Path as _P
+sys.path.insert(0, str(_P(__file__).parent.parent / 'simulation'))
 
 import sys
 from pathlib import Path

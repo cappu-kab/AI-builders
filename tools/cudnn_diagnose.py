@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 cudnn_diagnose.py — Jetson cuDNN diagnostic + fix tester.
 
@@ -143,7 +143,7 @@ banner("PHASE 2: Load CRN checkpoint")
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--ckpt",
-    default=str(Path.home() / "AI_builders/Run/CRN/checkpoints/best.pt"),
+    default=str(Path(__file__).parent.parent / "Run" / "CRN" / "checkpoints" / "best.pt"),
 )
 parser.add_argument("--ctx", type=int, default=47616,
                     help="Context samples (default=47616 = 3s @ 16 kHz)")
@@ -154,7 +154,7 @@ if not ckpt_path.exists():
     print(f"ERROR: checkpoint not found: {ckpt_path}")
     sys.exit(1)
 
-crn_dir = Path.home() / "AI_builders/Run/CRN"
+crn_dir = Path(__file__).parent.parent / "Run" / "CRN"
 if str(crn_dir) not in sys.path:
     sys.path.insert(0, str(crn_dir))
 

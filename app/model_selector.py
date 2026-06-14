@@ -1,9 +1,10 @@
-"""
-model_selector.py — UNet and Resemble-FT inference for local app.py.
+﻿"""
+model_selector.py â€” UNet and Resemble-FT inference for local app.py.
 CRN is handled by denoise_core.process() directly.
 Public API: process(in_wav_path, model_name) -> out_wav_path
 """
 from __future__ import annotations
+import os
 
 import sys
 import wave
@@ -11,10 +12,10 @@ from pathlib import Path
 
 import numpy as np
 
-_ROOT = Path(__file__).parent.resolve()
+_ROOT = Path(__file__).parent.parent.resolve()
 _UNET_DIR      = _ROOT / "Run" / "U_net"
 _UNET_CKPT     = _ROOT / "Colab_Ready_UNet" / "checkpoints_unet" / "best.pt"
-_RESEMBLE_DIR  = Path("C:/Users/rocha/resemble-enhance")
+_RESEMBLE_DIR  = Path(os.environ.get("RESEMBLE_DIR", "")) if os.environ.get("RESEMBLE_DIR") else None
 _RESEMBLE_CKPT = _ROOT / "Run" / "benchmark_outputs" / "resemble_ft" / "denoiser_ft.pt"
 
 _OUT_DIR = _ROOT / "outputs_tmp"

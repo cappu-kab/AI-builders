@@ -1,3 +1,8 @@
+﻿import sys
+from pathlib import Path as _P
+_REPO = _P(__file__).parent.parent
+sys.path.insert(0, str(_REPO / 'models' / 'crn'))
+sys.path.insert(0, str(_P(__file__).parent))
 """Synthetic end-to-end smoke test for the evaluation pipeline."""
 import os
 import shutil

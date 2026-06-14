@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-anc_latency.py — ANC pipeline latency measurement tool.
+anc_latency.py â€” ANC pipeline latency measurement tool.
 
 Stage 1: ESP32 I2S chunk cadence, UART stream quality, Jetson polling overhead.
          Requires ESP32 firmware compiled with #define LATENCY_DEBUG true.
@@ -28,11 +28,11 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-CRN_ROOT    = Path.home() / "AI_builders" / "Run" / "CRN"
-REPORT_PATH = Path.home() / "anc_latency_report.txt"
+# â”€â”€ Paths â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+CRN_ROOT    = Path(__file__).parent.parent / "Run" / "CRN"
+REPORT_PATH = Path(__file__).parent.parent / "anc_latency_report.txt"
 
-for _d in [str(CRN_ROOT), str(Path(__file__).resolve().parent), str(Path.home())]:
+for _d in [str(CRN_ROOT), str(Path(__file__).resolve().parent)]:
     if _d not in sys.path:
         sys.path.insert(0, _d)
 
@@ -41,9 +41,9 @@ MIC_H0      = 0xCC
 MIC_H1      = 0xDD
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Low-level UART helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _read_n(port, n: int, timeout: float = 2.0) -> Tuple[bytes, Optional[float], float]:
     """
@@ -108,9 +108,9 @@ def _wait_ok(port, token: bytes, timeout: float = 5.0) -> None:
     raise TimeoutError(f"Timed out waiting for {token!r}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 1 — UART + I2S latency
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Stage 1 â€” UART + I2S latency
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _measure_stage1_packets(port, n_packets: int, baud: int) -> Tuple[
         List[float], List[float], List[float]]:
@@ -118,9 +118,9 @@ def _measure_stage1_packets(port, n_packets: int, baud: int) -> Tuple[
     Collect n_packets extended packets (LATENCY_DEBUG=true firmware).
 
     Returns three lists (all in milliseconds):
-        i2s_ms   — 1a: ESP32 inter-read-completion interval (chunk cadence)
-        uart_ms  — 1b: UART stream-stall per packet
-        idle_ms  — 1c: idle gap between packets minus expected chunk duration
+        i2s_ms   â€” 1a: ESP32 inter-read-completion interval (chunk cadence)
+        uart_ms  â€” 1b: UART stream-stall per packet
+        idle_ms  â€” 1c: idle gap between packets minus expected chunk duration
     """
     i2s_ms:  List[float] = []
     uart_ms: List[float] = []
@@ -130,25 +130,25 @@ def _measure_stage1_packets(port, n_packets: int, baud: int) -> Tuple[
     last_pcm_samples:  int             = 0
 
     for pkt_idx in range(n_packets):
-        # ── Find 0xCC 0xDD ────────────────────────────────────────────────────
+        # â”€â”€ Find 0xCC 0xDD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         t_rx_start = _scan_header(port)
 
-        # ── Read [len_lo][len_hi][t0][t1][t2][t3] ────────────────────────────
+        # â”€â”€ Read [len_lo][len_hi][t0][t1][t2][t3] â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         hdr_rest, _, _ = _read_n(port, 6)   # 2 B length + 4 B timestamp
         pcm_len        = struct.unpack_from("<H", hdr_rest, 0)[0]
         t_interval_us  = struct.unpack_from("<I", hdr_rest, 2)[0]
 
-        # ── Read PCM payload ──────────────────────────────────────────────────
+        # â”€â”€ Read PCM payload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _, _, t_rx_end = _read_n(port, pcm_len)
 
         n_samples = pcm_len // 2   # int16 samples
 
-        # 1a — I2S inter-read interval from ESP32.
+        # 1a â€” I2S inter-read interval from ESP32.
         # Skip pkt 0: ESP32 sends 0 because there is no previous timestamp yet.
         if pkt_idx > 0 and t_interval_us > 0:
             i2s_ms.append(t_interval_us / 1000.0)
 
-        # 1b — UART stream stall.
+        # 1b â€” UART stream stall.
         # "actual rx window" = time Jetson spent receiving this packet.
         # Compared against the theoretical serialization time at `baud` baud.
         # Excess = pauses inside the byte stream (e.g., UART FIFO drain, OS jitter).
@@ -157,7 +157,7 @@ def _measure_stage1_packets(port, n_packets: int, baud: int) -> Tuple[
         stall_ms = (t_rx_end - t_rx_start - expected_serial_s) * 1000.0
         uart_ms.append(max(0.0, stall_ms))
 
-        # 1c — Jetson idle gap between packets minus expected chunk duration.
+        # 1c â€” Jetson idle gap between packets minus expected chunk duration.
         # Idle gap = how long Jetson waited before the next 0xCC arrived.
         # Expected = how long that chunk's worth of audio takes (~32 ms @ 16 kHz).
         if last_rx_end is not None and last_pcm_samples > 0:
@@ -183,7 +183,7 @@ def run_stage1(args) -> List[str]:
         bytesize = serial.EIGHTBITS,
         parity   = serial.PARITY_NONE,
         stopbits = serial.STOPBITS_ONE,
-        timeout  = 0.01,    # 10 ms — short for responsive byte scanning
+        timeout  = 0.01,    # 10 ms â€” short for responsive byte scanning
     )
     port.reset_input_buffer()
     print(f"  Opened {args.port} @ {args.baud} baud.", flush=True)
@@ -223,33 +223,33 @@ def run_stage1(args) -> List[str]:
     lines = [
         "",
         "=== Stage 1 Latency Breakdown ===",
-        f"1a  Mic → ESP32 I2S buffer:   {i2s_avg:6.1f} ms  "
+        f"1a  Mic â†’ ESP32 I2S buffer:   {i2s_avg:6.1f} ms  "
         f"(avg over {i2s_n} pkts | min {i2s_min:.1f}  max {i2s_max:.1f}  "
-        f"expected ≈{expected_chunk_ms:.0f} ms)",
-        f"1b  ESP32 → Jetson UART:      {urt_avg:6.1f} ms  "
+        f"expected â‰ˆ{expected_chunk_ms:.0f} ms)",
+        f"1b  ESP32 â†’ Jetson UART:      {urt_avg:6.1f} ms  "
         f"(avg over {urt_n} pkts | min {urt_min:.1f}  max {urt_max:.1f}  "
         f"stream-stall indicator, ideal=0)",
         f"1c  Jetson polling overhead: {idl_avg:6.1f} ms  "
         f"(avg over {idl_n} pkts | min {idl_min:.1f}  max {idl_max:.1f}  "
-        f"idle gap − chunk duration)",
-        "─" * 51,
+        f"idle gap âˆ’ chunk duration)",
+        "â”€" * 51,
         f"    Total Stage 1:          {i2s_avg + urt_avg + idl_avg:6.1f} ms",
         "",
         "  Notes:",
         "    1a = inter-read-completion interval on ESP32 (chunk cadence).",
-        f"         Expected ≈{expected_chunk_ms:.0f} ms for {512} samples @ {SAMPLE_RATE} Hz.",
-        "    1b = (actual Jetson rx window) − (total bytes \xd7 10 / baud).",
+        f"         Expected â‰ˆ{expected_chunk_ms:.0f} ms for {512} samples @ {SAMPLE_RATE} Hz.",
+        "    1b = (actual Jetson rx window) âˆ’ (total bytes \xd7 10 / baud).",
         "         Values near 0 = continuous byte stream; large = FIFO stall.",
-        "    1c = (idle time between packets) − (expected chunk duration).",
+        "    1c = (idle time between packets) âˆ’ (expected chunk duration).",
         "         Values near 0 = Python polling keeps up with the mic.",
         "",
     ]
     return lines
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 2 — CRN inference benchmark
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Stage 2 â€” CRN inference benchmark
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 CHUNK_SPECS: List[Tuple[int, int]] = [
     (   20,   320),
@@ -318,7 +318,7 @@ def run_stage2(args) -> List[str]:
     try:
         import torch
         if torch.cuda.is_available():
-            gpu_name = f" — {torch.cuda.get_device_name(0)}"
+            gpu_name = f" â€” {torch.cuda.get_device_name(0)}"
     except Exception:
         pass
 
@@ -326,12 +326,12 @@ def run_stage2(args) -> List[str]:
            f"{'Mean inf.':>10}  {'Min':>8}  {'Max':>8}  RT-capable?")
     lines = [
         "",
-        "=== Stage 2 — CRN Inference Time vs Chunk Size ===",
+        "=== Stage 2 â€” CRN Inference Time vs Chunk Size ===",
         f"  Device : {dev_label}{gpu_name}",
         f"  Warmup : {_N_WARMUP} runs   Timed : {_N_RUNS} runs per chunk",
         "",
         "  " + hdr,
-        "  " + "─" * len(hdr),
+        "  " + "â”€" * len(hdr),
     ]
 
     for ms_dur, n_samples in CHUNK_SPECS:
@@ -339,7 +339,7 @@ def run_stage2(args) -> List[str]:
               end=" ", flush=True)
         stats = _bench_one(model, device, n_samples, _run_model)
         rt_ok  = stats["mean"] < ms_dur
-        rt_str = "✅" if rt_ok else "❌"
+        rt_str = "âœ…" if rt_ok else "âŒ"
         row = (
             f"{ms_dur:>5} ms  {n_samples:>8}  {float(ms_dur):>8.1f} ms"
             f"  {stats['mean']:>8.1f} ms  {stats['min']:>6.1f} ms"
@@ -352,9 +352,9 @@ def run_stage2(args) -> List[str]:
     return lines
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Stage 3 — Pseudo-streaming simulation
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Stage 3 â€” Pseudo-streaming simulation
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _stream_sim(
     model,
@@ -370,23 +370,23 @@ def _stream_sim(
     steps of `hop_s`, extracting `hop_s` denoised samples per step.
 
     Window layout at hop k
-    ──────────────────────────────────────────────────────────────────────────
-    ← history (window_size − hop_s − lookahead_s) → | curr hop (hop_s) | LA (lookahead_s) |
-    ←────────────────────── window_size samples (= _CRN_CTX_N) ──────────────────────────→
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    â† history (window_size âˆ’ hop_s âˆ’ lookahead_s) â†’ | curr hop (hop_s) | LA (lookahead_s) |
+    â†â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ window_size samples (= _CRN_CTX_N) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â†’
 
-    The model always receives a full window_size array — the same shape it saw
+    The model always receives a full window_size array â€” the same shape it saw
     during training.  Only output[history_len : history_len+hop_s] is emitted:
     those positions correspond to the denoised estimate for signal[k*H:(k+1)*H],
     having seen real past context to the left and real lookahead context to the
     right.  Earlier and later output positions are discarded each step because
-    they are available — with better context — from adjacent hops.
+    they are available â€” with better context â€” from adjacent hops.
 
     Algorithmic latency: hop-k output can only be emitted after the lookahead
     region (signal[k*H+H : k*H+H+L]) has arrived, so:
         algo_latency = lookahead_ms + mean_inference_ms
 
     Returns
-        streaming_out : shape (N,) float32 — reconstructed signal
+        streaming_out : shape (N,) float32 â€” reconstructed signal
         times_ms      : per-hop inference time in milliseconds
     """
     import torch
@@ -416,10 +416,10 @@ def _stream_sim(
     times_ms:     List[float]      = []
 
     for k in range(n_hops):
-        # ── Build padded window ───────────────────────────────────────────────
-        # Signal range for this window (may extend outside [0, N) — zero fill).
-        sig_win_start = k * H - history_len   # negative early on → zero history
-        sig_win_end   = k * H + H + L         # may exceed N → zero lookahead
+        # â”€â”€ Build padded window â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # Signal range for this window (may extend outside [0, N) â€” zero fill).
+        sig_win_start = k * H - history_len   # negative early on â†’ zero history
+        sig_win_end   = k * H + H + L         # may exceed N â†’ zero lookahead
 
         window    = np.zeros(W, dtype=np.float32)
         src_start = max(0, sig_win_start)
@@ -429,7 +429,7 @@ def _stream_sim(
             dst_end   = dst_start + (src_end - src_start)
             window[dst_start:dst_end] = signal[src_start:src_end]
 
-        # ── Timed inference ───────────────────────────────────────────────────
+        # â”€â”€ Timed inference â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _sync()
         t0         = time.perf_counter()
         out_window = run_fn(model, window, device)
@@ -437,7 +437,7 @@ def _stream_sim(
         t1 = time.perf_counter()
         times_ms.append((t1 - t0) * 1000.0)
 
-        # ── Extract current-hop output ────────────────────────────────────────
+        # â”€â”€ Extract current-hop output â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         # out_window[history_len : history_len+H] is the best-quality estimate
         # for signal[k*H : (k+1)*H]: the model had real past samples on the
         # left and real lookahead samples on the right at those output positions.
@@ -468,7 +468,7 @@ def run_stage3(args) -> List[str]:
 
     hop_ms = args.hop
     hop_s  = int(round(hop_ms * SAMPLE_RATE / 1000))
-    W      = _CRN_CTX_N   # 47616 samples ≈ 2976 ms — the training window
+    W      = _CRN_CTX_N   # 47616 samples â‰ˆ 2976 ms â€” the training window
 
     # Guard: largest lookahead + hop must fit inside the training window
     max_la_s = int(round(max(LOOKAHEAD_MS_LIST) * SAMPLE_RATE / 1000))
@@ -479,7 +479,7 @@ def run_stage3(args) -> List[str]:
             f" must be < window {W}.  Reduce --hop or lookahead list."
         )
 
-    # ── Input signal ─────────────────────────────────────────────────────────
+    # â”€â”€ Input signal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if args.wav:
         with _wave.open(args.wav, "rb") as wf:
             raw = wf.readframes(wf.getnframes())
@@ -494,15 +494,15 @@ def run_stage3(args) -> List[str]:
         print(f"  Synthetic  : {dur_s:.0f} s white noise  ({n_sig} samples, seed=42)",
               flush=True)
 
-    # ── Model ─────────────────────────────────────────────────────────────────
+    # â”€â”€ Model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     print(f"  Loading CRN ...", end=" ", flush=True)
     model, device = load_crn()
     dev_label = "GPU" if device.type == "cuda" else "CPU"
     print(f"OK  ({dev_label})", flush=True)
 
-    # ── Offline reference ─────────────────────────────────────────────────────
+    # â”€â”€ Offline reference â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     # enhance_waveform_chunked uses Hann-windowed OLA with 50% overlap at the
-    # full training window size — the highest-quality non-causal baseline.
+    # full training window size â€” the highest-quality non-causal baseline.
     print(f"  Running offline reference (enhance_waveform_chunked) ...",
           end=" ", flush=True)
     t0_off      = time.perf_counter()
@@ -510,7 +510,7 @@ def run_stage3(args) -> List[str]:
     t1_off      = time.perf_counter()
     print(f"done  ({(t1_off - t0_off) * 1000:.0f} ms)", flush=True)
 
-    # ── Table ─────────────────────────────────────────────────────────────────
+    # â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     win_ms = W / SAMPLE_RATE * 1000
     n_hops = max(1, (len(signal) + hop_s - 1) // hop_s)
     hdr = (
@@ -519,7 +519,7 @@ def run_stage3(args) -> List[str]:
     )
     lines: List[str] = [
         "",
-        f"=== Stage 3 — Pseudo-streaming "
+        f"=== Stage 3 â€” Pseudo-streaming "
         f"(hop={hop_ms} ms, window={win_ms:.0f} ms, {n_hops} hops) ===",
         f"  Device   : {dev_label}",
         f"  Signal   : {len(signal)} samples = {len(signal) / SAMPLE_RATE:.2f} s",
@@ -527,7 +527,7 @@ def run_stage3(args) -> List[str]:
         f"  Window   : {win_ms:.0f} ms = {W} samples  (= _CRN_CTX_N, model unchanged)",
         "",
         "  " + hdr,
-        "  " + "─" * len(hdr),
+        "  " + "â”€" * len(hdr),
     ]
 
     for la_ms in LOOKAHEAD_MS_LIST:
@@ -542,7 +542,7 @@ def run_stage3(args) -> List[str]:
         mean_inf = float(np.mean(times_ms))
         algo_lat = la_ms + mean_inf
         rt_ok    = mean_inf < hop_ms
-        rt_str   = "✅" if rt_ok else "❌"
+        rt_str   = "âœ…" if rt_ok else "âŒ"
 
         # Pearson correlation vs offline output (same-length prefix)
         n_cmp = min(len(stream_out), len(offline_out))
@@ -573,15 +573,15 @@ def run_stage3(args) -> List[str]:
         f"    Algo latency = lookahead_ms + mean_inference_ms per window.",
         f"    RT-capable   = mean_inference < hop_duration ({hop_ms} ms).",
         "    corr         = Pearson r vs offline enhance_waveform_chunked output.",
-        "                   Larger lookahead → more future context → closer to offline.",
+        "                   Larger lookahead â†’ more future context â†’ closer to offline.",
         "",
     ]
     return lines
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Entry point
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def main() -> None:
     ap = argparse.ArgumentParser(
@@ -610,7 +610,7 @@ def main() -> None:
     args = ap.parse_args()
 
     ts        = time.strftime("%Y-%m-%d %H:%M:%S")
-    all_lines = [f"ANC Latency Report — {ts}", "=" * 51]
+    all_lines = [f"ANC Latency Report â€” {ts}", "=" * 51]
 
     if args.stage in ("1", "all"):
         print("\n=== Stage 1: UART + I2S Latency ===")
@@ -635,7 +635,7 @@ def main() -> None:
 
     report = "\n".join(all_lines) + "\n"
     REPORT_PATH.write_text(report, encoding="utf-8")
-    print(f"\nReport saved → {REPORT_PATH}")
+    print(f"\nReport saved â†’ {REPORT_PATH}")
 
 
 if __name__ == "__main__":

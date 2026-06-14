@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 export_crn_onnx.py
 ==================
@@ -36,7 +36,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # ── paths ─────────────────────────────────────────────────────────────────────
-_AI_DIR  = Path(__file__).resolve().parent
+_AI_DIR  = Path(__file__).resolve().parent.parent
 _CRN_DIR = _AI_DIR / "Run" / "CRN"
 _CKPT    = _CRN_DIR / "checkpoints" / "best.pt"
 _OUT     = _AI_DIR / "crn_bilstm.onnx"

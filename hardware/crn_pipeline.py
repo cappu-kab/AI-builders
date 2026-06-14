@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-crn_pipeline.py — Record → Denoise (CRN) → Play
+crn_pipeline.py â€” Record â†’ Denoise (CRN) â†’ Play
 Jetson Orin Nano, 16 kHz mono, ESP32-S3 @ /dev/ttyTHS0.
 
 Usage:
@@ -20,38 +20,38 @@ from typing import List, Tuple
 import numpy as np
 import serial
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
-CRN_ROOT  = Path.home() / "AI_builders" / "Run" / "CRN"
+# â”€â”€ Paths â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+CRN_ROOT  = Path(__file__).parent.parent / "Run" / "CRN"
 CKPT_PATH = CRN_ROOT / "checkpoints" / "best.pt"
 if str(CRN_ROOT) not in sys.path:
     sys.path.insert(0, str(CRN_ROOT))
 
-# ── Constants ──────────────────────────────────────────────────────────────────
+# â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 SAMPLE_RATE  = 16_000
 MIC_H0       = 0xCC
 MIC_H1       = 0xDD
 SPK_HEADER   = bytes([0xAA, 0xBB])
 PLAY_CHUNK_BYTES = 512    # bytes per speaker packet payload (= 256 int16 samples)
                            # ESP32 firmware rejects length > CHUNK_SIZE+64 = 576 bytes
-_CRN_CTX_N   = 47616      # BiLSTM training window size (≈3 s at 16 kHz)
-_SAFE_SINGLE = 64_000     # process in one pass if L ≤ this (shorter than 2 hops,
+_CRN_CTX_N   = 47616      # BiLSTM training window size (â‰ˆ3 s at 16 kHz)
+_SAFE_SINGLE = 64_000     # process in one pass if L â‰¤ this (shorter than 2 hops,
                            # overlap-add would give no benefit)
 _STFT_MIN    = 257        # torch.stft center=True reflect-pad needs L > n_fft//2
-_OLA_HOP     = _CRN_CTX_N // 2   # 23808 — 50% overlap hop for overlap-add
+_OLA_HOP     = _CRN_CTX_N // 2   # 23808 â€” 50% overlap hop for overlap-add
 _PRE_PAD_S   = 8_192      # silence pre-padded before model to warm up the forward
                            # BiLSTM (~64 STFT frames); trimmed from output afterward.
-                           # Without this the first ~0.5–1 s of output can be quiet
+                           # Without this the first ~0.5â€“1 s of output can be quiet
                            # because the forward LSTM starts from zero state.
-_DRY_MIX     = 0.03       # keep tiny — higher values blend raw mic noise back in.
+_DRY_MIX     = 0.03       # keep tiny â€” higher values blend raw mic noise back in.
 _TARGET_RMS  = 0.15       # RMS target after enhancement; normalises volume across runs.
 
 RAW_WAV = "/tmp/raw_input.wav"
 ENH_WAV = "/tmp/enhanced.wav"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # UART helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _wait_for(port: serial.Serial, token: bytes, timeout: float = 3.0) -> None:
     """Block until `token` appears in the incoming byte stream or timeout."""
@@ -118,9 +118,9 @@ def _recv_mic_packets(port: serial.Serial, duration: float) -> np.ndarray:
     return np.concatenate(frames) if frames else np.zeros(0, dtype=np.int16)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # CRN helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def load_crn():
     """
@@ -128,16 +128,16 @@ def load_crn():
 
     Three-attempt strategy for Jetson cuDNN INTERNAL_ERROR in flatten_parameters():
 
-    Attempt 1 — eval() before .to(cuda):
+    Attempt 1 â€” eval() before .to(cuda):
       Load to CPU (safe, no cuDNN involved), call eval(), then move to CUDA.
       In eval mode dropout is inactive, which avoids the cuDNN workspace
       allocation that triggers INTERNAL_ERROR on some Jetson cuDNN 8.x configs.
 
-    Attempt 2 — cudnn.enabled=False:
+    Attempt 2 â€” cudnn.enabled=False:
       Disable cuDNN so flatten_parameters() is a no-op (is_acceptable=False).
-      LSTM runs via the generic CUDA path — slower but correct.
+      LSTM runs via the generic CUDA path â€” slower but correct.
 
-    Attempt 3 — CPU fallback:
+    Attempt 3 â€” CPU fallback:
       All CUDA paths failed; run inference on CPU.
     """
     import torch
@@ -150,7 +150,7 @@ def load_crn():
         model, _ = load_model(CKPT_PATH, cpu)
         return model, cpu
 
-    # Attempt 1: load to CPU → eval() → move to CUDA
+    # Attempt 1: load to CPU â†’ eval() â†’ move to CUDA
     try:
         model, _ = load_model(CKPT_PATH, cpu)
         model.eval()
@@ -163,14 +163,14 @@ def load_crn():
     try:
         torch.backends.cudnn.enabled = False
         model, _ = load_model(CKPT_PATH, cuda)
-        print("  [INFO] cuDNN disabled — BiLSTM runs via generic CUDA path.")
+        print("  [INFO] cuDNN disabled â€” BiLSTM runs via generic CUDA path.")
         return model, cuda
     except RuntimeError as exc:
         print(f"  [WARN] CUDA+cuDNN-disabled also failed: {exc!s}")
         torch.backends.cudnn.enabled = True   # restore for other ops
 
     # Attempt 3: CPU fallback
-    print("  [WARN] All CUDA paths failed — falling back to CPU.")
+    print("  [WARN] All CUDA paths failed â€” falling back to CPU.")
     model, _ = load_model(CKPT_PATH, cpu)
     return model, cpu
 
@@ -203,7 +203,7 @@ def enhance_waveform_chunked(model, pcm_f32: np.ndarray, device) -> np.ndarray:
     """
     Run CRN on a 1-D float32 waveform in range [-1, 1].
 
-    ≤ _SAFE_SINGLE (4 s): single forward pass — matches training length exactly.
+    â‰¤ _SAFE_SINGLE (4 s): single forward pass â€” matches training length exactly.
 
     Longer recordings: Hann-windowed 50% overlap-add (OLA).
       Window W = _CRN_CTX_N = 47616 samples (exactly the BiLSTM training
@@ -211,7 +211,7 @@ def enhance_waveform_chunked(model, pcm_f32: np.ndarray, device) -> np.ndarray:
       Every output sample is the weighted average of TWO independent model
       passes that each see the full W-sample bidirectional context.  At the
       centre of each window the Hann weight is 1.0; it tapers smoothly to 0
-      at the edges, so boundary artefacts are suppressed by design — no hard
+      at the edges, so boundary artefacts are suppressed by design â€” no hard
       cuts, no crossfade logic needed.
       The OLA normalisation factor (sum of squared Hann windows at each
       sample) is uniformly 0.5 for 50% overlap, so dividing by it is exact.
@@ -247,7 +247,7 @@ def enhance_waveform_chunked(model, pcm_f32: np.ndarray, device) -> np.ndarray:
         s   = i * H
         seg = pcm_pad[s : s + W]
         enh = _run_model(model, seg, device)
-        # Trim/pad to W (STFT center-pad can shift length by ±1)
+        # Trim/pad to W (STFT center-pad can shift length by Â±1)
         if len(enh) > W:
             enh = enh[:W]
         elif len(enh) < W:
@@ -255,7 +255,7 @@ def enhance_waveform_chunked(model, pcm_f32: np.ndarray, device) -> np.ndarray:
         output[s : s + W] += enh * win
         norm[s : s + W]   += win
 
-    # Normalise by accumulated window weight (≈0.5 everywhere with 50% overlap)
+    # Normalise by accumulated window weight (â‰ˆ0.5 everywhere with 50% overlap)
     result = (output / np.maximum(norm, 1e-8))[:L]
     return result
 
@@ -268,11 +268,11 @@ def _suppress_musical_noise(enh_f32: np.ndarray) -> np.ndarray:
     by the mask.  They sound like a tonal warble or faint echo.
 
     Fix: re-analyse the enhanced waveform with a SHORT STFT (n_fft=256,
-    hop=64 → 4 ms frames), apply a 3-frame centred moving average over the
+    hop=64 â†’ 4 ms frames), apply a 3-frame centred moving average over the
     magnitude spectrum, then reconstruct with the original phase.
 
     Centred (zero-phase) MA: no group delay, no added echo.
-    Window = 3 × 4 ms = 12 ms — far shorter than any speech phoneme (≥30 ms),
+    Window = 3 Ã— 4 ms = 12 ms â€” far shorter than any speech phoneme (â‰¥30 ms),
     so speech clarity is preserved while isolated magnitude spikes are averaged
     away.
     """
@@ -299,7 +299,7 @@ def _suppress_musical_noise(enh_f32: np.ndarray) -> np.ndarray:
 
 
 def _despike(pcm: np.ndarray, sigma_mult: float = 2.5) -> np.ndarray:
-    """Interpolate over impulse samples exceeding sigma_mult × std."""
+    """Interpolate over impulse samples exceeding sigma_mult Ã— std."""
     sigma = float(np.std(pcm))
     if sigma < 1e-6:
         return pcm
@@ -317,7 +317,7 @@ def _despike(pcm: np.ndarray, sigma_mult: float = 2.5) -> np.ndarray:
 
 
 def _highpass(pcm: np.ndarray, cutoff: float = 200.0, sr: int = 16000, order: int = 4) -> np.ndarray:
-    """Butterworth high-pass at 200 Hz — cuts sub-200 Hz hum/buzz after CRN."""
+    """Butterworth high-pass at 200 Hz â€” cuts sub-200 Hz hum/buzz after CRN."""
     from scipy.signal import butter, sosfilt
     sos = butter(order, cutoff, btype='high', fs=sr, output='sos')
     return sosfilt(sos, pcm).astype(np.float32)
@@ -336,16 +336,16 @@ def _noise_gate(pcm: np.ndarray, thresh: float = 0.015, frame_n: int = 160) -> n
     return pcm * gain
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Pipeline phases
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def phase1_record(port: serial.Serial, duration: float,
                   raw_wav: str = RAW_WAV) -> Tuple[int, float]:
     """Send startmic, collect packets for `duration` s, send stopmic, save WAV."""
     t0 = time.perf_counter()
 
-    # Recover from any previous Ctrl+C — stop lingering mic stream
+    # Recover from any previous Ctrl+C â€” stop lingering mic stream
     port.write(b"stopmic\n")
     port.flush()
     time.sleep(0.3)
@@ -355,7 +355,7 @@ def phase1_record(port: serial.Serial, duration: float,
     port.flush()
     _wait_for(port, b"OK:mic_start")
 
-    print(f"  *** RECORDING {duration:.0f} s — SPEAK NOW ***", flush=True)
+    print(f"  *** RECORDING {duration:.0f} s â€” SPEAK NOW ***", flush=True)
     pcm_i16 = _recv_mic_packets(port, duration)
     print("  Recording done.", flush=True)
 
@@ -391,18 +391,18 @@ def phase2_denoise(model, device, raw_wav: str = RAW_WAV,
     input_s = len(pcm_f32) / SAMPLE_RATE
     t_read = time.perf_counter()
 
-    # De-spike pass 1: before CRN — remove impulse spikes from raw mic input
+    # De-spike pass 1: before CRN â€” remove impulse spikes from raw mic input
     pcm_f32 = _despike(pcm_f32)
     t_despike1 = time.perf_counter()
 
     # Pre-pad with silence so the forward BiLSTM has ~64 warmup frames
-    # before it reaches real audio — prevents the quiet beginning.
+    # before it reaches real audio â€” prevents the quiet beginning.
     pre = np.zeros(_PRE_PAD_S, dtype=np.float32)
     enh_padded = enhance_waveform_chunked(model, np.concatenate([pre, pcm_f32]), device)
     enh_f32 = enh_padded[_PRE_PAD_S : _PRE_PAD_S + len(pcm_f32)]
     t_crn = time.perf_counter()
 
-    # De-spike pass 2: after CRN — CRN can produce a burst artifact at spike locations
+    # De-spike pass 2: after CRN â€” CRN can produce a burst artifact at spike locations
     # even after pass 1 removed the raw spike (STFT frames around spike still unusual)
     enh_f32 = _despike(enh_f32)
     t_despike2 = time.perf_counter()
@@ -412,13 +412,13 @@ def phase2_denoise(model, device, raw_wav: str = RAW_WAV,
     t_suppress = time.perf_counter()
 
     # Dry mix: small blend keeps over-suppressed speech frames audible.
-    # Keep low — higher values blend raw mic noise back in.
+    # Keep low â€” higher values blend raw mic noise back in.
     enh_f32 = (1.0 - _DRY_MIX) * enh_f32 + _DRY_MIX * pcm_f32
 
-    # High-pass at 200 Hz — second-layer LF noise removal after CRN + dry mix
+    # High-pass at 200 Hz â€” second-layer LF noise removal after CRN + dry mix
     enh_f32 = _highpass(enh_f32)
 
-    # v2 volume: RMS-normalize then multiply — same approach that worked at --volume 2.5
+    # v2 volume: RMS-normalize then multiply â€” same approach that worked at --volume 2.5
     rms_out = float(np.sqrt(np.mean(enh_f32 ** 2)))
     if rms_out > 1e-6:
         enh_f32 = enh_f32 * min(_TARGET_RMS / rms_out, 3.0)
@@ -426,11 +426,11 @@ def phase2_denoise(model, device, raw_wav: str = RAW_WAV,
         enh_f32 = enh_f32 * volume
     peak = float(np.abs(enh_f32).max())
 
-    # Fade out last 0.5 s — suppress tail noise from floating mic
+    # Fade out last 0.5 s â€” suppress tail noise from floating mic
     fade_n = min(int(0.50 * SAMPLE_RATE), len(enh_f32))
     enh_f32[-fade_n:] *= np.linspace(1.0, 0.0, fade_n, dtype=np.float32)
 
-    # Soft peak limit: tanh compressor at 0.95 — smoothly squashes any remaining
+    # Soft peak limit: tanh compressor at 0.95 â€” smoothly squashes any remaining
     # runaway peaks that survived de-spike; preserves loudness, avoids hard-clip pops
     enh_f32 = np.tanh(enh_f32 / 0.95) * 0.95
     t_post = time.perf_counter()
@@ -454,7 +454,7 @@ def phase2_denoise(model, device, raw_wav: str = RAW_WAV,
     print(f"    Musical-noise suppression (STFT): {(t_suppress  - t_despike2 )*1000:6.1f} ms")
     print(f"    Post-proc (dry-mix + HP + norm):  {(t_post      - t_suppress )*1000:6.1f} ms")
     print(f"    WAV write:                        {(t_end       - t_post     )*1000:6.1f} ms")
-    print(f"  audio — RMS out: {rms_out:.4f}  peak: {peak:.3f}")
+    print(f"  audio â€” RMS out: {rms_out:.4f}  peak: {peak:.3f}")
     return elapsed, dev_type, input_s
 
 
@@ -463,8 +463,8 @@ def phase3_play(port: serial.Serial) -> Tuple[float, int]:
     Read enhanced WAV, packetize into 512-byte chunks, send to ESP32.
 
     Key constraints from ESP32 firmware (work_sound_v5.ino):
-      - Packet payload must be ≤ CHUNK_SIZE+64 = 576 bytes (512 samples × 2 bytes
-        = 1024 bytes was silently rejected — that was the original silent-speaker bug).
+      - Packet payload must be â‰¤ CHUNK_SIZE+64 = 576 bytes (512 samples Ã— 2 bytes
+        = 1024 bytes was silently rejected â€” that was the original silent-speaker bug).
       - CHUNK_SIZE in the firmware is 512 BYTES, so we send 512-byte payloads
         = 256 int16 samples per packet.
       - A flush command clears the DMA buffer before playback to avoid a
@@ -485,7 +485,7 @@ def phase3_play(port: serial.Serial) -> Tuple[float, int]:
     port.reset_input_buffer()
 
     BYTES_PER_SEC = SAMPLE_RATE * 2               # 32 000 bytes/s
-    SEND_RATE     = BYTES_PER_SEC * 1.02          # 32 640 bytes/s — 102% real-time
+    SEND_RATE     = BYTES_PER_SEC * 1.02          # 32 640 bytes/s â€” 102% real-time
     PREFILL_BYTES = BYTES_PER_SEC * 0.5           # 0.5 s pre-buffered
     total_bytes = 0
     n_packets   = (len(raw_pcm) + PLAY_CHUNK_BYTES - 1) // PLAY_CHUNK_BYTES
@@ -517,12 +517,12 @@ def phase3_play(port: serial.Serial) -> Tuple[float, int]:
     return elapsed, total_bytes
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Entry point
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="CRN pipeline: Record → Denoise → Play")
+    ap = argparse.ArgumentParser(description="CRN pipeline: Record â†’ Denoise â†’ Play")
     ap.add_argument("--duration", type=float, default=3.0,
                     help="Recording duration in seconds (default: 3)")
     ap.add_argument("--port",  default="/dev/ttyTHS0", help="UART device")
@@ -571,11 +571,11 @@ def main() -> None:
         if args.skip_record:
             print(f"  Phase 1 [RECORD]:   skipped  ({args.raw_out})")
         else:
-            print(f"  Phase 1 [RECORD]:   {t1:.3f} s  —  {n_frames} frames"
+            print(f"  Phase 1 [RECORD]:   {t1:.3f} s  â€”  {n_frames} frames"
                   f" = {n_frames / SAMPLE_RATE:.2f} s @ {SAMPLE_RATE} Hz")
-        print(f"  Phase 2 [DENOISE]:  {t2:.3f} s  —  model: {dev_used},"
+        print(f"  Phase 2 [DENOISE]:  {t2:.3f} s  â€”  model: {dev_used},"
               f" input: {in_s:.2f} s")
-        print(f"  Phase 3 [PLAY]:     {t3:.3f} s  —  {bytes_sent / 1024:.1f} KB sent")
+        print(f"  Phase 3 [PLAY]:     {t3:.3f} s  â€”  {bytes_sent / 1024:.1f} KB sent")
         print(f"  Total:              {total:.3f} s")
         print()
     finally:

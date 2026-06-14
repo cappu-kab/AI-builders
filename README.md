@@ -1,4 +1,4 @@
-# Thai Speech Denoiser & Transcription Pipeline
+﻿# Thai Speech Denoiser & Transcription Pipeline
 ## ระบบลดเสียงรบกวนและถอดความเสียงพูดภาษาไทย
 
 > **AI Builders 2026** — End-to-end pipeline: data collection → model training → web demo → Jetson hardware prototype

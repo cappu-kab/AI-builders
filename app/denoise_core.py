@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-_ROOT    = Path(__file__).parent.resolve()          # AI_builders/
+_ROOT    = Path(__file__).parent.parent.resolve()   # AI_builders/
 _CRN_DIR = _ROOT / "Run" / "CRN"
 _CKPT    = _CRN_DIR / "checkpoints" / "best.pt"
 _OUT_DIR = _ROOT / "outputs_tmp"

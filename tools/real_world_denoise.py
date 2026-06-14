@@ -1,4 +1,4 @@
-"""
+﻿"""
 real_world_denoise.py
 =====================
 Denoise a single .mp3 file with all five models and save .wav outputs.
@@ -38,7 +38,7 @@ SCRIPT_DIR   = Path(__file__).parent
 RUN_DIR      = SCRIPT_DIR / "Run"
 CRN_DIR      = RUN_DIR / "CRN"
 UNET_DIR     = RUN_DIR / "U_net"
-RESEMBLE_DIR = Path.home() / "resemble-enhance"
+RESEMBLE_DIR = Path(os.environ["RESEMBLE_DIR"]) if "RESEMBLE_DIR" in os.environ else None
 
 SR           = 16_000
 _RESEMBLE_SR = 44_100

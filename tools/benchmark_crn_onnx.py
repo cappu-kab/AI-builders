@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 benchmark_crn_onnx.py
 =====================
@@ -69,7 +69,7 @@ def main():
     args = parse_args()
 
     onnx_path = (Path(args.onnx).expanduser() if args.onnx
-                 else Path.home() / "AI_builders" / "Run" / "CRN" / "crn_crn2.onnx")
+                 else Path(__file__).parent.parent / "Run" / "CRN" / "crn_crn2.onnx")
 
     print("=" * 66)
     print("  CRN ONNX Runtime Latency Sweep")

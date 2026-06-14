@@ -1,9 +1,9 @@
-import io
+﻿import io
 import numpy as np
 import gradio as gr
-import denoise_core
-import model_selector
-import transcript_tab
+from app import denoise_core
+from app import model_selector
+from app import transcript_tab
 
 
 def _load_mono_float(path):
@@ -70,7 +70,7 @@ def run(in_wav_path, model_choice):
         yield None, None, "", None, None, "", None
         return
 
-    yield None, None, "", None, None, "⏳ Processing...", None
+    yield None, None, "", None, None, "â³ Processing...", None
 
     if model_choice == "CRN (default)":
         denoised_path = denoise_core.process(in_wav_path, gate=True, agc=True, compress=True)
@@ -83,7 +83,7 @@ def run(in_wav_path, model_choice):
         snr_in  = _estimate_snr(pcm_in)
         snr_out = _estimate_snr(pcm_out)
         improvement = snr_out - snr_in
-        score_text = f"[{model_choice}] SNR: +{improvement:.1f} dB improvement ({snr_in:.1f} → {snr_out:.1f} dB)"
+        score_text = f"[{model_choice}] SNR: +{improvement:.1f} dB improvement ({snr_in:.1f} â†’ {snr_out:.1f} dB)"
     except Exception as exc:
         score_text = f"SNR error: {exc}"
 
@@ -95,7 +95,7 @@ def run(in_wav_path, model_choice):
         spec_in = spec_out = None
         score_text += f" | Spectrogram error: {exc}"
 
-    yield in_wav_path, denoised_path, score_text, spec_in, spec_out, "✓ Done", denoised_path
+    yield in_wav_path, denoised_path, score_text, spec_in, spec_out, "âœ“ Done", denoised_path
 
 
 with gr.Blocks(title="Speech Denoiser") as demo:
