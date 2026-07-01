@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cappu — Thai Speech Denoiser</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #2c4f8c;
+      --deep-blue: #015185;
+      --mid-blue:  #5990c0;
+      --amber:     #cea273;
+      --cream:     #fcedd3;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(145deg, #d6e4f7 0%, #bdd3ed 30%, #a8c2e0 60%, #c8d8ee 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 {
+      width: 480px; height: 480px;
+      background: radial-gradient(circle, rgba(1,81,133,0.18) 0%, transparent 70%);
+      top: -100px; right: -120px;
+    }
+    .blob-2 {
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, rgba(206,162,115,0.22) 0%, transparent 70%);
+      bottom: -80px; left: -80px;
+    }
+    .blob-3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%);
+      top: 40%; left: 45%;
+      transform: translate(-50%, -50%);
+    }
+
+    .container {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 400px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    .eyebrow {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.85rem;
+      letter-spacing: 0.22em;
+      color: var(--deep-blue);
+      opacity: 0.75;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.2rem;
+      font-weight: 600;
+      color: var(--navy);
+      text-align: center;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+    h1 span { color: #b07840; }
+
+    .sub {
+      font-size: 0.72rem;
+      font-weight: 300;
+      letter-spacing: 0.18em;
+      color: var(--deep-blue);
+      text-transform: uppercase;
+      margin-bottom: 36px;
+      opacity: 0.7;
+    }
+
+    .rule {
+      width: 40px; height: 1px;
+      background: linear-gradient(90deg, transparent, #b07840, transparent);
+      margin-bottom: 36px;
+    }
+
+    .links { display: flex; flex-direction: column; gap: 13px; width: 100%; }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 17px 20px;
+      border-radius: 16px;
+      text-decoration: none;
+      color: var(--navy);
+      border: 1px solid rgba(44,79,140,0.15);
+      background: rgba(255,255,255,0.52);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 2px 16px rgba(44,79,140,0.08), 0 1px 3px rgba(44,79,140,0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.68);
+      box-shadow: 0 8px 28px rgba(44,79,140,0.14), 0 2px 6px rgba(44,79,140,0.08);
+    }
+
+    .icon-wrap {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: rgba(44,79,140,0.08);
+      border: 1px solid rgba(44,79,140,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .card-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1e3a6e;
+    }
+    .card-sub {
+      font-size: 0.72rem;
+      font-weight: 300;
+      color: var(--mid-blue);
+      margin-top: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .arrow {
+      font-size: 1rem;
+      color: #b07840;
+      opacity: 0.55;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .card:hover .arrow { opacity: 1; transform: translateX(3px); }
+
+    .footer {
+      margin-top: 44px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .footer-line {
+      width: 60px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(44,79,140,0.3), transparent);
+      margin-bottom: 10px;
+    }
+    .footer p {
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      color: rgba(44,79,140,0.45);
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="container">
+    <p class="eyebrow">AI Builders 2026</p>
+    <h1>Thai Speech<br><span>Denoiser</span></h1>
+    <p class="sub">Cappu &nbsp;·&nbsp; Speech Enhancement</p>
+    <div class="rule"></div>
+
+    <div class="links">
+      <a class="card" href="https://huggingface.co/spaces/cappuuuuu1234/thai-speech-denoiser" target="_blank">
+        <div class="icon-wrap">🤗</div>
+        <div class="card-text">
+          <span class="card-title">Thai Speech Denoiser</span>
+          <span class="card-sub">Demo · Hugging Face Spaces</span>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+
+      <a class="card" href="https://github.com/cappu-kab/AI-builders" target="_blank">
+        <div class="icon-wrap">💻</div>
+        <div class="card-text">
+          <span class="card-title">cappu-kab / AI-builders</span>
+          <span class="card-sub">Source Code · GitHub</span>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+
+      <a class="card" href="https://rochaya1234.medium.com/ai-based-speech-enhancement-system-as-a-foundation-for-intelligent-noise-cancellation-ec018a7d90b1" target="_blank">
+        <div class="icon-wrap">📝</div>
+        <div class="card-text">
+          <span class="card-title">AI-Based Speech Enhancement</span>
+          <span class="card-sub">Article · Medium</span>
+        </div>
+        <span class="arrow">›</span>
+      </a>
+    </div>
+
+    <div class="footer">
+      <div class="footer-line"></div>
+      <p>CRN BiLSTM · ONNX · Gradio</p>
+    </div>
+  </div>
+</body>
+</html>
